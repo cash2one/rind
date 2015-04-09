@@ -3,50 +3,30 @@ VERSION = 1.1.0
 CPPFLAGS =  -D__VERSION_ID__="\"$(VERSION)\"" -g -Wall -O3 -fPIC  -pipe -D_REENTRANT -DLINUX -Wall
 DEBUG_CPPFLAGS =  -D__VERSION_ID__="\"$(VERSION)\"" -g -Wall -O0 -fPIC  -pipe -D_REENTRANT -DLINUX -Wall
 
-TARGET=test_index test_kv test_snappy test_table rind
+TARGET=test_rind
 
-OBJ=blockfile.o  \
-	file_db.o  \
-	file_kv.o  \
-	index.o  \
+OBJ=rind_table.o \
 	mem.o \
-   	table.o
+	sign.o
 
-INCLUDES=-I libs/snappy
+INCLUDES=-I include
 
 		  
 LIBS = -lcrypto \
 	   -lpthread \
-	   -Llibs/snappy -lsnappy
 
 all: clean $(TARGET)
 	@echo 'MAKE: ALL'
 	mkdir output
 	mv $(TARGET) output
 
-test_index: $(OBJ) test_index.o 
-	@echo 'MAKE [[' $@ ']]'
-	g++ $^ -o $@ $(LIBS)
-
-test_kv: $(OBJ) test_kv.o 
-	@echo 'MAKE [[' $@ ']]'
-	g++ $^ -o $@ $(LIBS)
-
-test_snappy: $(OBJ) test_snappy.o 
-	@echo 'MAKE [[' $@ ']]'
-	g++ $^ -o $@ $(LIBS)
-
-test_table: $(OBJ) test_table.o 
-	@echo 'MAKE [[' $@ ']]'
-	g++ $^ -o $@ $(LIBS)
-
-rind: $(OBJ) rind.o 
+test_rind: $(OBJ) test_rind.o 
 	@echo 'MAKE [[' $@ ']]'
 	g++ $^ -o $@ $(LIBS)
 
 
 
-%.o: %.cc
+%.o: src/%.cc
 	g++ -c $< -o $@ $(INCLUDES)
 
 clean:

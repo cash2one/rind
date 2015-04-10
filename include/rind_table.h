@@ -18,12 +18,14 @@ typedef size_t Rind_ID_t;
 typedef size_t Rind_Sign_t;
 
 struct Rindex_t {
-    FArray_t<Rind_ID_t> _rlist;
+    FArray_t<Rind_ID_t, 16> _rlist;
     size_t _ordered_num;
 
     Rindex_t();
     void add(Rind_ID_t doc_id);
     void update();
+
+    size_t memory_size() const;
 };
 
 class RindTable_t {
@@ -51,6 +53,8 @@ class RindTable_t {
         void update_index();
 
         bool get_index(const char* index, const Rindex_t** out) const;
+
+        size_t memory_size() const;
        
     private:
         typedef map<Rind_ID_t, Rindex_t> IndexDict_t;

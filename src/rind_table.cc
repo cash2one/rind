@@ -103,6 +103,11 @@ Rindex_t::add(Rind_ID_t doc_id) {
     _rlist.push_back(doc_id);
 }
 
+size_t 
+Rindex_t::memory_size() const {
+    return sizeof(_ordered_num) + _rlist.memory_size();
+}
+
 void 
 Rindex_t::update() {
     if (_ordered_num < _rlist.size()) {
@@ -131,6 +136,28 @@ RindTable_t::get_index(const char* index, const Rindex_t** out) const {
     }
     *out = &(it->second);
     return true;
+}
+
+size_t 
+RindTable_t::memory_size() const {
+    size_t data_size = 0;
+    size_t index_size = 0;
+    size_t index_count = 0;
+    for (int i=0;i<_data.size(); ++i) {
+        data_size += _data[i]->buffer_size();
+    }
+    for (IndexDict_t::const_iterator it = _index.begin();
+            it!=_index.end(); ++it )
+    {
+        index_size += it->second.memory_size();
+        index_count += it->second._rlist.size();
+    }
+    LOG_NOTICE("index_lemma : %llu", _index.size());
+    LOG_NOTICE("index_count : %llu", index_count);
+    LOG_NOTICE("data_size=%s index_size=%s", 
+            size_display(data_size).c_str(), 
+            size_display(index_size).c_str());
+    return data_size + index_size;
 }
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

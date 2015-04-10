@@ -62,6 +62,7 @@ RindTable_t* load_file(const char* file_name) {
     fclose(fp);
     LOG_NOTICE("Dict load over. dict_size=%u", table->size());
     table->update_index();
+    table->memory_size();
     return table;
 }
 

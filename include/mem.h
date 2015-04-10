@@ -30,6 +30,7 @@ class Buffer_t {
         void* buffer() const { return _buffer; }
         // getter: get used size.
         size_t size() const { return _size; }
+        size_t buffer_size() const {return _buffer_size;}
         // setter: set size used.
         void set_size(size_t s);
         // require size to use.

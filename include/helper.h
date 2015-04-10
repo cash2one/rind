@@ -68,14 +68,14 @@ private:
     timeval _end_tv;
 };
 
-template <typename T>
+template <typename T, int ExtendSize=512>
 class FArray_t {
     public:
-        FArray_t(size_t extend_num=512):
+        FArray_t():
             _l(NULL),
             _num(0),
             _bnum(0),
-            _extend_num(extend_num),
+            _extend_num(ExtendSize),
             _magic_check(0xDEADBEEF)
         {}
 
@@ -90,7 +90,6 @@ class FArray_t {
             _extend_num = o._extend_num;
             if (_bnum > 0) {
                 _l = (T*)malloc(_bnum * sizeof(T));
-                //LOG_NOTICE("m: %p [%u]", _l, _bnum);
                 memcpy(_l, o._l, _num * sizeof(T));
             }
             return *this;
@@ -146,6 +145,10 @@ class FArray_t {
             }
         }
 
+        size_t memory_size() const {
+            return sizeof(*this) + _bnum * sizeof(T);
+        }
+
     private:
         T *_l;
         size_t _num;
@@ -185,6 +188,25 @@ void split(char* s, const char* token, std::vector<std::string>& out) {
         f = strtok_r(NULL, token, &p); 
     }
     return ;
+}
+
+inline 
+string size_display(size_t sz) {
+    static char buf[64];
+    const char* unit_str = "Byte(s)";
+    float s = sz;
+    if (sz >= (1LL<<30)) {
+        s /= (1LL << 30);
+        unit_str = "Gb";
+    } else if (sz > (1LL << 20)) {
+        s /= (1LL << 20);
+        unit_str = "Mb";
+    } else if (sz > (1LL << 10)){
+        s /= (1LL << 10);
+        unit_str = "Kb";
+    }
+    snprintf(buf, 64, "%.1f %s [%llu]", s, unit_str, sz);
+    return string(buf);
 }
 
 template<typename Job_t> 

@@ -24,12 +24,11 @@ test_rind: $(OBJ) test_rind.o
 	@echo 'MAKE [[' $@ ']]'
 	g++ $^ -o $@ $(LIBS)
 
-
-
 %.o: src/%.cc
 	g++ -c $< -o $@ $(INCLUDES)
 
 clean:
+	find . -name '*~' | xargs rm -rf
 	rm -rf *.o *.so *~ $(TARGET) models/*~
 	rm -rf output
 

@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "rind_table.h"
+#include "helper.h"
 
 char big_line[512 * 1024];
 
@@ -37,7 +38,9 @@ RindTable_t* load_file(const char* file_name) {
             split(big_line, "\t", fields);
 
             Buffer_t obj;
-            //obj.set(fields[0].c_str(), fields[0].size(), 0);
+            obj.require_size(fields[0].size() + 1);
+            memcpy(obj.buffer(), fields[0].c_str(), fields[0].size()+1);
+            obj.set_size(fields[0].size() + 1);
             Rind_ID_t doc_id = table->add(obj);
 
             for (size_t i=1; i<fields.size(); ++i) {
@@ -57,8 +60,15 @@ RindTable_t* load_file(const char* file_name) {
         table = NULL;
     } 
     fclose(fp);
-    //table->force_update();
+    LOG_NOTICE("Dict load over. dict_size=%u", table->size());
+    table->update_index();
     return table;
+}
+
+void show_command_help() {
+    printf("Usage:\n");
+    printf("\tdoc <doc_id> : search doc of doc_id.\n");
+    printf("\tindex <index_1> <index_2>, ...  : search for entity of index_1, index_2, ...\n");
 }
 
 int main(int argc, const char** argv) {
@@ -71,73 +81,50 @@ int main(int argc, const char** argv) {
     }
     RindTable_t* table = load_file(argv[1]);
 
-    /*
-    printf("Usage:\n");
-    printf("uri <uri>                       : search for entity of uri=<uri>.\n");
-    printf("uri_sign <uri_sign>             : search for entity of uri_sign=<uri_sign>.\n");
-    printf("index <index_1> <index_2>, ...  : search for entity of index_1, index_2, ...\n");
-    printf("set <key>=<value>\n");
-    printf("  key_list:\n");
-    printf("    output_entity : 0|1 [default 0]\n");
     char line[1024];
+    show_command_help();
     printf("Query >");
     while ( fgets(line, sizeof(line), stdin) ) {
         line[strlen(line)-1] = 0;
-        char* temp;
-        char* token = strtok_r(line, " ", &temp);
         std::vector<std::string> token_list;
-        while (1) {
-            token_list.push_back(token);
-            token = strtok_r(NULL, " ", &temp);
-            if (token == NULL) {
-                break;
-            }
-        }
+        split(line, " ", token_list);
 
         // process command.
-        if (token_list[0] == "uri") {
+        if (token_list.size()<=0) {
+            show_command_help();
+        } else if (token_list[0] == "doc") {
             Buffer_t buffer;
-            if (table->get(token_list[1].c_str(), buffer, true)) {
+            Rind_ID_t doc_id = (Rind_ID_t)atoi(token_list[1].c_str());
+            if (table->get(doc_id, &buffer)) {
                 string s((const char*)buffer.buffer());
-                if (s.length() > buffer.size()) {
-                    s = s.substr(0, buffer.size());
-                }
-                printf("[%u] %s\n", (unsigned)buffer.size(), s.c_str());
+                printf("Found\n[%u] %s\n", (unsigned)buffer.size(), s.c_str());
             } else {
-                printf("NotFound uri=[%s]\n", token_list[1].c_str());
-            }
-
-        } else if (token_list[0] == "uri_sign") {
-            Buffer_t buffer;
-            size_t sign;
-            sscanf(token_list[1].c_str(), "%llu", &sign);
-            if (table->get_by_sign(sign, buffer, true)) {
-                string s((const char*)buffer.buffer());
-                if (s.length() > buffer.size()) {
-                    s = s.substr(0, buffer.size());
-                }
-                printf("[%u] %s\n", (unsigned)buffer.size(), s.c_str());
-            } else {
-                printf("NotFound uri=[%s]\n", token_list[1].c_str());
+                printf("NotFound doc_id=[%llu]\n", doc_id);
             }
 
         } else if (token_list[0] == "index") {
-            IndexQuery_t indquery;
+            Buffer_t temp;
             for (size_t i=1; i<token_list.size(); ++i) {
-                indquery.add(token_list[i].c_str());
+                const char* index = token_list[i].c_str();
+                const Rindex_t* out;
+                if (table->get_index(index, &out)) {
+                    printf("index of [%s], num=%d(unordered=%d), top_5:\n", index, out->_ordered_num, out->_rlist.size()-out->_ordered_num);
+                    for (int j=0; j<out->_ordered_num && j<5; ++j) {
+                        Rind_ID_t doc_id = out->_rlist[j];
+                        table->get(doc_id, &temp);
+                        printf("[%llu]: %s\n", doc_id, temp.buffer());
+                    }
+                } else {
+                    printf("index[%s] not found.\n", index);
+                }
             }
-            vector<size_t> uri_list;
-            table->indquery_uri(uri_list, indquery);
-            for (size_t i=0; i<uri_list.size() && i<20; ++i) {
-                printf("uri_sign : %llu\n", (long long unsigned)uri_list[i]);
-            }
-
-        } else if (token_list[0] == "set") {
+        } else {
+            show_command_help();
         }
-
         printf("Query >");
     }
-    */
+
+    delete table;
     return 0;
 }
 

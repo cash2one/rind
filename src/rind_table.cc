@@ -11,37 +11,54 @@
 
 #include <cstring>
 
-RindTable_t::RindTable_t():
-    _cur_id(0)
-{}
+Rind_ID_t _calc_index_sign(const char* index) {
+    Rind_ID_t s;
+    Sign::create_sign(index, strlen(index), &s);
+    return s;
+}
+
+RindTable_t::RindTable_t() {}
 
 RindTable_t::~RindTable_t() {
+    for (int i=0; i<_data.size(); ++i) {
+        if (_data[i]) {
+            delete _data[i];
+        }
+    }
 }
 
 Rind_ID_t 
-RindTable_t::add(Buffer_t obj) {
-    _data[_cur_id].deepcopy(obj);
-    _cur_id ++;
+RindTable_t::add(const Buffer_t& obj) {
+    Buffer_t *copy_one = new Buffer_t(obj);
+    _data.push_back(copy_one);
+    return _data.size() - 1;
 }
 
 void 
-RindTable_t::set(Rind_ID_t doc_id, Buffer_t obj) {
-    if (doc_id < _cur_id) {
-        _data[doc_id].deepcopy(obj);
+RindTable_t::set(Rind_ID_t doc_id, const Buffer_t& obj) {
+    if (doc_id < _data.size()) {
+        if (_data[doc_id]) {
+            _data[doc_id]->deepcopy(obj);
+        } else {
+            _data[doc_id] = new Buffer_t(obj);
+        }
     }
 }
 
 void 
 RindTable_t::del(Rind_ID_t doc_id) {
-    if (_data.find(doc_id)!=_data.end()) {
-        _data.erase(doc_id);
+    if (doc_id < _data.size()) {
+        if (_data[doc_id]) {
+            delete _data[doc_id];
+            _data[doc_id] = NULL;
+        }
     }
 }
 
 bool 
 RindTable_t::get(Rind_ID_t doc_id, Buffer_t* out) {
-    if (_data.find(doc_id)!=_data.end()) {
-        out->deepcopy(_data[doc_id]);
+    if (doc_id < _data.size()) {
+        out->deepcopy(*_data[doc_id]);
         return true;
     }
     return false;
@@ -76,15 +93,13 @@ FArray_t<Rind_ID_t> search(const char** index_list, size_t num) {
     FArray_t<RindTable_t> ret;
 }
 
-Rind_ID_t
-RindTable_t::_calc_index_sign(const char* index) {
-    Rind_ID_t s;
-    Sign::create_sign(index, strlen(index), &s);
-    return s;
+Rindex_t::Rindex_t() {
+    _ordered_num = 0;
 }
 
 void
 Rindex_t::add(Rind_ID_t doc_id) {
+    //LOG_NOTICE("add: %llu", doc_id);
     _rlist.push_back(doc_id);
 }
 
@@ -104,6 +119,18 @@ Rindex_t::update() {
         _rlist.set_size(p);
         _ordered_num = _rlist.size();
     } 
+}
+
+bool
+RindTable_t::get_index(const char* index, const Rindex_t** out) const {
+    Rind_Sign_t index_sign = _calc_index_sign(index);
+    IndexDict_t::const_iterator it = _index.find(index_sign);
+    if (it == _index.end()) {
+        *out = NULL;
+        return false;
+    }
+    *out = &(it->second);
+    return true;
 }
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

@@ -21,6 +21,7 @@ struct Rindex_t {
     FArray_t<Rind_ID_t> _rlist;
     size_t _ordered_num;
 
+    Rindex_t();
     void add(Rind_ID_t doc_id);
     void update();
 };
@@ -31,10 +32,13 @@ class RindTable_t {
         virtual ~RindTable_t();
 
         // obj management.
-        Rind_ID_t add(Buffer_t obj);
-        void set(Rind_ID_t doc_id, Buffer_t obj);
+        Rind_ID_t add(const Buffer_t& obj);
+        void set(Rind_ID_t doc_id, const Buffer_t& obj);
         void del(Rind_ID_t doc_id);
         bool get(Rind_ID_t doc_id, Buffer_t* out);
+
+        // return document num.
+        size_t size() const { return _data.size(); }
 
         // index->uri linking management.
         bool add_index(const char* index, Rind_ID_t doc_id);
@@ -45,19 +49,15 @@ class RindTable_t {
          *  if update_index() called, then index will be rebuild.
          */
         void update_index();
-        
-        // index search.
-        FArray_t<Rind_ID_t> search(const char** index_list, size_t num);
 
+        bool get_index(const char* index, const Rindex_t** out) const;
+       
     private:
         typedef map<Rind_ID_t, Rindex_t> IndexDict_t;
 
         // temp code for debug.
-        map<Rind_ID_t, Buffer_t> _data;
+        FArray_t<Buffer_t*> _data;
         IndexDict_t _index;
-        Rind_ID_t _cur_id;
-
-        Rind_ID_t _calc_index_sign(const char* index);
 };
 
 #endif  //__RIND_TABLE_H_

@@ -11,37 +11,37 @@
 
 #include <cstdlib>
 
+/**
+ *  used as a stack variable.
+ */
 class Buffer_t {
     public:
-        // create a empty buffer.
+        // create a new memory buffer.
         Buffer_t();
         // create a buffer with a pre-alloc buffer.
         Buffer_t(size_t size);
-        // copy a buffer from other buffer.
-        // which means that it doesn't have it's own buffer.
-        Buffer_t(const Buffer_t& o);
-
-        // free buffer if it own a buffer.
+        // free buffer.
         ~Buffer_t();
 
-        // make a reference of a existing buffer. 
-        void operator = (const Buffer_t& o);
-        // copy from other buffer.
+        Buffer_t(const Buffer_t& o);
         void deepcopy(const Buffer_t& o);
 
         // getter: get raw buffer.
-        void* buffer() const  {return _buffer;}
+        void* buffer() const { return _buffer; }
         // getter: get used size.
-        size_t size() const {return _size;}
-
+        size_t size() const { return _size; }
+        // setter: set size used.
+        void set_size(size_t s);
         // require size to use.
         void require_size(size_t size);
 
     private:
-        size_t  _size; // data size.
+        void operator = (const Buffer_t& o) {};
+
         size_t  _buffer_size;  // buffer size.
+        size_t  _size;
+        int  _refer_count;  // refer counter, free itself when counter is zero.
         void*   _buffer;
-        bool    _need_release;
 
         void _free();
         static size_t  _get_malloc_size(size_t query_size);
